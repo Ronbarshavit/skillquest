@@ -316,3 +316,25 @@
 }
 /* After answering, the keypad gives way to the feedback so it fits on one screen. */
 .drill__q--answered .sq-numpad__keys, .drill__q--answered .sq-numpad__ok { display: none; }
+
+/* Placement test + adaptive difficulty */
+.placement__body { gap: var(--sq-space-4); }
+.placement__emoji { font-size: var(--sq-font-size-xxl); text-align: center; line-height: 1; }
+.placement__title { text-align: center; margin: 0; }
+.placement__lead { margin: 0; font-size: var(--sq-font-size-lg); }
+.placement__points { margin: 0; padding-inline-start: 0; list-style: none; display: flex; flex-direction: column; gap: var(--sq-space-2); }
+.placement__result { display: flex; flex-direction: column; align-items: center; gap: var(--sq-space-2); text-align: center; }
+.placement__level { font-size: var(--sq-font-size-xxl); font-weight: var(--sq-font-weight-bold); color: var(--sq-color-primary); }
+.placement__stars { display: flex; gap: var(--sq-space-1); font-size: var(--sq-font-size-xl); }
+.placement__star { color: var(--sq-color-border); }
+.placement__star--on { color: var(--sq-color-warning); }
+.placement__name { font-size: var(--sq-font-size-lg); }
+.difficulty-line { margin: 0; margin-block-start: var(--sq-space-2); }
+.adapt-note { margin-block-start: var(--sq-space-2); }
+.level-row { display: flex; flex-direction: column; gap: var(--sq-space-2); }
+.level-row__head { display: flex; align-items: center; gap: var(--sq-space-3); }
+.level-row__icon { font-size: var(--sq-font-size-xl); }
+.level-row__text { flex: 1; display: flex; flex-direction: column; }
+.level-row__controls { display: flex; align-items: center; justify-content: space-between; gap: var(--sq-space-3); flex-wrap: wrap; }
+.level-row__current { display: flex; flex-direction: column; }
+.level-row .link-btn { align-self: flex-start; }

@@ -62,7 +62,7 @@ export function QuestDetail() {
               <span className="drill-info__icon" aria-hidden>🧠</span>
               <div className="drill-info__text">
                 <strong>{topicLabel[quiz.topic]}{quiz.table ? ` – לוח ${quiz.table}` : ''}</strong>
-                <span className="small muted">{quiz.length} שאלות · צריך {quiz.passScore} נכונות כדי לעבור · שלב {level}</span>
+                <span className="small muted">{quiz.length} שאלות · צריך {quiz.passScore} נכונות כדי לעבור · רמה {level} מתוך 5</span>
               </div>
             </div>
             <div className="drill-info__badges">
@@ -96,7 +96,7 @@ export function QuestDetail() {
 
         <div className="sticky-cta">
           {quiz ? (
-            <Button size="lg" block icon="sparkle" onClick={() => nav(`/child/quest/${quest.id}/play`)}>
+            <Button size="lg" block icon="sparkle" onClick={() => (sel.needsPlacement(activeChildId, cat.id) ? nav(`/child/category/${cat.id}/placement`, { state: { returnTo: `/child/quest/${quest.id}` } }) : nav(`/child/quest/${quest.id}/play`))}>
               {status === 'approved' || status === 'submitted' ? 'עוד תרגול 💪' : attempts.length ? 'לנסות שוב' : 'מתחילים לתרגל!'}
             </Button>
           ) : tpl && canSubmit ? (

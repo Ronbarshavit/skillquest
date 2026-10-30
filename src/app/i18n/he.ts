@@ -28,6 +28,7 @@ export const errorMessage: Record<DomainErrorCode, string> = {
   ALREADY_SUBMITTED: 'המשימה כבר נשלחה השבוע',
   NOT_A_DRILL: 'למשימה הזו אין תרגול',
   DRILL_INCOMPLETE: 'עוד לא סיימת את כל השלבים',
+  NO_PLACEMENT: 'אין בדיקת רמה לתחום הזה',
   NOT_SUBMITTED: 'המשימה לא ממתינה לאישור',
   CATEGORY_DISABLED: 'תחום העניין הזה כבוי',
   QUEST_INACTIVE: 'המשימה לא פעילה',
@@ -48,6 +49,15 @@ export function describeError(e: unknown): string {
 }
 
 export const levelLabel = (n: number) => `שלב ${n}`;
+
+/** Friendly names for drill difficulty 1..5 (placement result, parent view). */
+const DIFFICULTY_NAMES = ['מתחילים 🌱', 'צועדים קדימה 🚶', 'מתקדמים 🚴', 'חזקים 🚀', 'אלופים 🏆'];
+export const difficultyName = (n: number) => DIFFICULTY_NAMES[Math.min(5, Math.max(1, n)) - 1];
+export const difficultySourceLabel: Record<import('@core/index').DifficultySource, string> = {
+  placement: 'לפי בדיקת הרמה',
+  adaptive: 'מותאם לפי התרגולים',
+  parent: 'נקבע על ידי הורה',
+};
 
 export const formatDateTime = (iso: string) =>
   new Intl.DateTimeFormat('he-IL', { weekday: 'short', day: 'numeric', month: 'numeric', hour: '2-digit', minute: '2-digit' }).format(new Date(iso));

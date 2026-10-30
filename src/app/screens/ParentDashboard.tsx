@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { shekelsToAgorot } from '@core/index';
-import { Amount, Badge, Button, Card, Icon, ProgressBar, ScreenHeader, TextField, formatShekels, themeLabels, themeNames, useTheme } from '@design/index';
+import { Amount, Badge, Button, Card, Icon, ProgressBar, ScreenHeader, Stepper, TextField, formatShekels, themeLabels, themeNames, useTheme } from '@design/index';
 import { actions, useSelectors } from '../hooks/useStore';
 import { useSession } from '../hooks/session';
 import { ChildPicker } from '../components/ChildPicker';
@@ -10,7 +10,7 @@ import { useToast } from '../components/Toast';
 import { WalletSummary } from '../components/WalletSummary';
 import { PretendMoneyNote } from '../components/PretendMoneyNote';
 import { EmptyState } from '../components/EmptyState';
-import { describeError, formatDateTime, ledgerLabel, levelLabel } from '../i18n/he';
+import { describeError, difficultyName, difficultySourceLabel, formatDateTime, ledgerLabel, levelLabel } from '../i18n/he';
 import { resetToDemo, resetToEmpty } from '../adapters/storeInstance';
 
 const toShekelsInput = (agorot: number) => String(agorot / 100);
@@ -68,6 +68,8 @@ export function ParentDashboard() {
       toast(describeError(e), 'danger');
     }
   };
+
+  const placementCats = sel.visibleCategories().filter((c) => sel.placementKind(c.id));
 
   const allocRatio = alloc.budget ? Math.min(1, alloc.allocated / alloc.budget) : alloc.allocated ? 1 : 0;
 
@@ -177,6 +179,50 @@ export function ParentDashboard() {
           </dl>
           {alloc.overAllocated && <p className="notice notice--warning small">סך הפרסים במשימות גבוה מהתקציב. אפשר לכבות משימות או תחומים, או להגדיל תקציב.</p>}
         </Card>
+
+        {placementCats.length > 0 && (
+          <Card className="stack" data-testid="parent-levels">
+            <h2>רמת תרגול ובדיקת רמה</h2>
+            <p className="small muted">בפעם הראשונה בכל תחום {child.name} עונה על בדיקת רמה קצרה (ללא פרס). אחר כך הרמה עולה אחרי שני תרגולים מצוינים ויורדת כשקשה. אפשר לקבוע רמה ידנית.</p>
+            <ul className="stack">
+              {placementCats.map((c) => {
+                const p = sel.progress(child.id, c.id);
+                const lvl = sel.difficulty(child.id, c.id);
+                const waiting = sel.needsPlacement(child.id, c.id);
+                return (
+                  <Card as="li" key={c.id} tone="outline" accent={c.colorKey} className="level-row" data-testid={`level-row-${c.id}`}>
+                    <div className="level-row__head">
+                      <span className="level-row__icon" aria-hidden>{c.icon}</span>
+                      <div className="level-row__text">
+                        <strong>{c.name}</strong>
+                        {p.placement ? (
+                          <span className="small muted" data-testid="placement-summary">
+                            בדיקת רמה: רמה {p.placement.level} · <bdi dir="ltr">{p.placement.correct}/{p.placement.total}</bdi> נכונות · {formatDateTime(p.placement.finishedAt)}
+                          </span>
+                        ) : (
+                          <span className="small muted">{waiting ? 'בדיקת הרמה עוד לא בוצעה – תתחיל בכניסה הבאה לתחום' : 'ללא בדיקת רמה'}</span>
+                        )}
+                      </div>
+                      {waiting ? <Badge tone="warning">ממתין לבדיקה</Badge> : <Badge tone="success">{difficultyName(lvl)}</Badge>}
+                    </div>
+                    <div className="level-row__controls">
+                      <div className="level-row__current">
+                        <span className="small">רמת תרגול נוכחית (1–5)</span>
+                        {p.difficultySource && <span className="small muted">{difficultySourceLabel[p.difficultySource]}</span>}
+                      </div>
+                      <Stepper value={lvl} min={1} max={5} label={`רמת תרגול ב${c.name}`} onChange={(v) => run(() => actions.setDifficulty(child.id, c.id, v), `רמת התרגול ב${c.name} עודכנה ל-${v}`)} />
+                    </div>
+                    {!waiting && (
+                      <button type="button" className="link-btn" onClick={() => run(() => actions.resetPlacement(child.id, c.id), `בדיקת רמה חדשה תתחיל בכניסה הבאה ל${c.name}`)}>
+                        בדיקת רמה מחדש
+                      </button>
+                    )}
+                  </Card>
+                );
+              })}
+            </ul>
+          </Card>
+        )}
 
         <Link to="/parent/children" className="nav-card" data-testid="nav-manage-children">
           <Card interactive className="nav-card__inner">

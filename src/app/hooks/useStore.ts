@@ -16,6 +16,9 @@ import {
   attemptsFor,
   bestAttempt,
   drillLevel,
+  needsPlacement,
+  placementKind,
+  currentDifficulty,
   type AppState,
   type Id,
 } from '@core/index';
@@ -53,6 +56,9 @@ export function useSelectors() {
     completion: (id: Id) => s.completions.find((c) => c.id === id),
     attempts: (childId: Id, questId: Id) => attemptsFor(s, childId, questId, s.currentWeekId),
     bestAttempt: (childId: Id, questId: Id) => bestAttempt(s, childId, questId),
+    needsPlacement: (childId: Id, categoryId: Id) => needsPlacement(s, childId, categoryId),
+    placementKind: (categoryId: Id) => placementKind(s, categoryId),
+    difficulty: (childId: Id, categoryId: Id) => currentDifficulty(s, childId, categoryId),
     drillLevel: (childId: Id, questId: Id) => {
       const q = s.quests.find((x) => x.id === questId);
       return q ? drillLevel(s, childId, q) : 1;

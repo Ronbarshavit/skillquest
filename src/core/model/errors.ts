@@ -17,7 +17,8 @@ export type DomainErrorCode =
   | 'DUPLICATE_CHILD'
   | 'TOO_MANY_CHILDREN'
   | 'NOT_A_DRILL'
-  | 'DRILL_INCOMPLETE';
+  | 'DRILL_INCOMPLETE'
+  | 'NO_PLACEMENT';
 
 export class DomainError extends Error {
   constructor(

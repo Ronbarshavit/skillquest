@@ -62,3 +62,29 @@ export async function playDrill(page, plan, onStep) {
   await page.locator('.drill[data-index="summary"]').waitFor();
   return qs;
 }
+
+/** Plays the placement test on screen (questions are rebuilt per step from the seed + level). `plan(i, level)` → right? */
+export async function playPlacement(page, plan, onStep) {
+  const c = await loadCore();
+  const levels = [];
+  for (let i = 0; i < 20; i++) {
+    const root = page.locator(`.placement[data-phase="question"][data-index="${i}"]`);
+    await root.waitFor();
+    const kind = await root.getAttribute('data-kind');
+    const seed = await root.getAttribute('data-seed');
+    const level = Number(await root.getAttribute('data-level'));
+    levels.push(level);
+    const q = c.placementQuestion(kind, seed, i, level);
+    if (onStep) await onStep(i, 'question', q);
+    await answer(page, q, plan(i, level));
+    if (onStep) await onStep(i, 'feedback', q);
+    const toResult = page.getByRole('button', { name: /לתוצאה/ });
+    if (await toResult.isVisible()) {
+      await toResult.click();
+      await page.locator('.placement[data-phase="result"]').waitFor();
+      return levels;
+    }
+    await page.getByRole('button', { name: 'הבא' }).click();
+  }
+  throw new Error('placement did not finish');
+}

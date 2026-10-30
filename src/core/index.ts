@@ -23,5 +23,6 @@ export * from './drills/wordbank';
 export * from './drills/service';
 export * from './drills/spec';
 export * from './drills/migrate';
+export * from './drills/adaptive';
 export { createRng, hashSeed } from './drills/rng';
 export * from './store';

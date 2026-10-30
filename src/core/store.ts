@@ -13,6 +13,7 @@ import * as onboarding from './services/onboarding';
 import * as children from './services/children';
 import * as drills from './drills/service';
 import { migrateState } from './drills/migrate';
+import * as adaptive from './drills/adaptive';
 import type { DrillResponse } from './drills/types';
 
 type Listener = () => void;
@@ -85,6 +86,21 @@ export class SkillQuestStore {
     const { state, ...rest } = drills.finishDrill(this.state, this.ctx, session, responses);
     this.commit(state);
     return rest;
+  }
+  // Placement test + adaptive difficulty
+  startPlacement(childId: Id, categoryId: Id): adaptive.PlacementSession {
+    return adaptive.startPlacement(this.state, this.ctx, childId, categoryId);
+  }
+  finishPlacement(session: adaptive.PlacementSession, responses: readonly (DrillResponse | undefined)[]) {
+    const r = adaptive.finishPlacement(this.state, this.ctx, session, responses);
+    this.commit(r.state);
+    return r.record;
+  }
+  setDifficulty(childId: Id, categoryId: Id, level: number) {
+    this.commit(adaptive.setDifficulty(this.state, childId, categoryId, level));
+  }
+  resetPlacement(childId: Id, categoryId: Id) {
+    this.commit(adaptive.resetPlacement(this.state, childId, categoryId));
   }
   submitGuided(childId: Id, questId: Id, input: drills.GuidedSubmission): QuestCompletion {
     const r = drills.submitGuided(this.state, this.ctx, childId, questId, input);

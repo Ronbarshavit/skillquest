@@ -4,7 +4,7 @@
 //   SQ_URL=http://127.0.0.1:4319/skillquest/ SQ_SHOTS=/tmp/sq-pages-shots npm run screenshots
 import { chromium } from 'playwright-core';
 import { mkdirSync } from 'node:fs';
-import { closeCore, playDrill } from './drill-bot.mjs';
+import { closeCore, playDrill, playPlacement } from './drill-bot.mjs';
 
 const BASE = process.env.SQ_URL ?? 'http://127.0.0.1:4319/';
 const OUT = (process.env.SQ_SHOTS ?? new URL('../screenshots/', import.meta.url).pathname).replace(/\/?$/, '/');
@@ -62,7 +62,13 @@ await shot('01-child-home');
 
 // 2. Quest list
 await page.locator('.category-tile', { hasText: 'חשבון' }).locator('a').click();
-await page.waitForURL(/category\/cat-math/);
+// First visit to Math → placement test intro ("not now" goes to the quest list)
+await page.waitForURL(/category\/cat-math\/placement/);
+await page.locator('.placement[data-phase="intro"]').waitFor();
+check('first Math visit opens the placement intro', await page.getByText('בואו נגלה מאיפה מתחילים!').isVisible());
+await page.getByRole('button', { name: 'אחר כך' }).click();
+await page.waitForURL(/category\/cat-math$/);
+check('"later" shows the quest list with a placement banner', await page.getByTestId('placement-banner').isVisible());
 await page.waitForTimeout(200);
 const hdr = await page.evaluate(() => {
   const b = document.querySelector('.sq-header__back').getBoundingClientRect();
@@ -421,6 +427,69 @@ await page.emulateMedia({ reducedMotion: 'reduce' });
 const qAnim = await page.locator('.drill__q').evaluate((e) => getComputedStyle(e).animationName);
 check('reduced motion disables drill animation', qAnim === 'none', qAnim);
 await page.emulateMedia({ reducedMotion: 'no-preference' });
+
+// Placement test (Math, then English) → result → adaptive level; parent sees + overrides it
+await go('/reset');
+await page.waitForURL(/#\/child$/);
+const stateNow = () => page.evaluate(() => JSON.parse(localStorage.getItem('skillquest.state.v1')));
+const st0 = await stateNow();
+const kid0 = st0.family.children[0].id;
+await go('/child/category/cat-math');
+await page.waitForURL(/cat-math\/placement/);
+await page.waitForTimeout(400);
+await shot('26-placement-intro', { full: false });
+await page.getByRole('button', { name: 'יוצאים לדרך!' }).click();
+// A child who is solid up to level 3 and misses harder questions → placed at 3
+const mathLevels = await playPlacement(page, (i, level) => level <= 3, async (i, phase) => {
+  if (i === 1 && phase === 'question') { await page.waitForTimeout(500); await shot('27-placement-question', { full: false }); }
+  if (i === 2 && phase === 'feedback') { await page.waitForTimeout(500); await shot('27b-placement-feedback', { full: false }); }
+});
+check('placement asks 6–8 questions', mathLevels.length >= 6 && mathLevels.length <= 8, mathLevels.join(','));
+check('placement starts at level 3 and adapts', mathLevels[0] === 3 && new Set(mathLevels).size > 1, mathLevels.join(','));
+await page.waitForTimeout(700);
+const placed = Number(await page.locator('.placement[data-phase="result"]').getAttribute('data-level'));
+check('Math placed at level 3', placed === 3, String(placed));
+await shot('28-placement-result', { full: false });
+const st1 = await stateNow();
+const pMath = st1.progress.find((p) => p.childId === kid0 && p.categoryId === 'cat-math');
+check('placement saved (difficulty + record)', pMath?.difficulty === 3 && pMath.placement?.level === 3 && pMath.difficultySource === 'placement');
+check('placement awards no money or XP', JSON.stringify(st1.ledger) === JSON.stringify(st0.ledger) && JSON.stringify(st1.completions) === JSON.stringify(st0.completions) && (pMath.xp ?? 0) === (st0.progress.find((p) => p.childId === kid0 && p.categoryId === 'cat-math')?.xp ?? 0));
+await page.getByRole('button', { name: 'למשימות!' }).click();
+await page.waitForURL(/category\/cat-math$/);
+check('quest list shows the practice level', (await page.getByTestId('difficulty-line').textContent()).includes('3 מתוך 5'));
+await shot('28b-quest-list-difficulty', { full: false });
+await go('/child/quest/q-math-3/play');
+check('quiz plays at the placed level', (await page.locator('.drill').getAttribute('data-level')) === '3');
+// English: starting a quiz first routes to the placement, then back to the quest
+await go('/child/quest/q-lang-3');
+await page.getByRole('button', { name: /מתחילים לתרגל/ }).click();
+await page.waitForURL(/cat-lang\/placement/);
+await page.getByRole('button', { name: 'יוצאים לדרך!' }).click();
+await playPlacement(page, () => true);
+check('English placement: all right → level 5', (await page.locator('.placement[data-phase="result"]').getAttribute('data-level')) === '5');
+await shot('28c-placement-result-english', { full: false });
+await page.getByRole('button', { name: 'לתרגול!' }).click();
+await page.waitForURL(/quest\/q-lang-3$/);
+// Parent view
+await go('/child');
+await page.getByRole('button', { name: 'מצב הורה' }).click();
+await page.waitForTimeout(300);
+if (await page.getByText('בחרו קוד הורה').isVisible().catch(() => false)) { await enterPin('1234'); await enterPin('1234'); }
+else await enterPin('1234');
+await page.waitForURL(/#\/parent$/);
+const levels = page.getByTestId('parent-levels');
+await levels.scrollIntoViewIfNeeded();
+check('parent sees placed levels', (await levels.getByTestId('level-row-cat-math').textContent()).includes('בדיקת רמה: רמה 3'));
+await page.waitForTimeout(300);
+await levels.screenshot({ path: `${OUT}29-parent-levels.png` });
+console.log('saved', '29-parent-levels');
+await levels.getByRole('button', { name: 'רמת תרגול בחשבון: הקטנה' }).click();
+await page.waitForTimeout(200);
+const pOver = (await stateNow()).progress.find((p) => p.childId === kid0 && p.categoryId === 'cat-math');
+check('parent override sets difficulty', pOver.difficulty === 2 && pOver.difficultySource === 'parent');
+await levels.getByTestId('level-row-cat-lang').getByRole('button', { name: 'בדיקת רמה מחדש' }).click();
+await page.waitForTimeout(200);
+check('parent can ask for a new placement', !(await stateNow()).progress.find((p) => p.childId === kid0 && p.categoryId === 'cat-lang').placement);
 await closeCore();
 
 check('no page/console errors', errors.length === 0, errors.join(' | '));

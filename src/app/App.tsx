@@ -8,6 +8,7 @@ import { QuestList } from './screens/QuestList';
 import { QuestDetail } from './screens/QuestDetail';
 import { Celebration } from './screens/Celebration';
 import { DrillPlayer } from './screens/DrillPlayer';
+import { Placement } from './screens/Placement';
 import { GuidedActivity } from './screens/GuidedActivity';
 import { ParentDashboard } from './screens/ParentDashboard';
 import { InterestAreas } from './screens/InterestAreas';
@@ -44,6 +45,7 @@ export function App() {
         <Route path="/unlock" element={<Unlock />} />
         <Route path="/child" element={<ChildHome />} />
         <Route path="/child/category/:categoryId" element={<QuestList />} />
+        <Route path="/child/category/:categoryId/placement" element={<Placement />} />
         <Route path="/child/quest/:questId" element={<QuestDetail />} />
         <Route path="/child/quest/:questId/play" element={<DrillPlayer />} />
         <Route path="/child/quest/:questId/activity" element={<GuidedActivity />} />

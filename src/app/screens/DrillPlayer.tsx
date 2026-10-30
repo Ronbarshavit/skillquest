@@ -82,7 +82,7 @@ function DrillPlayerView({ questId }: { questId: string }) {
 
   return (
     <div className="screen drill" data-quest={quest.id} data-seed={session.seed} data-level={session.level} data-index={result ? 'summary' : idx}>
-      <ScreenHeader title={quest.title} subtitle={`${cat.icon} ${cat.name} · שלב ${session.level}`} onBack={back} />
+      <ScreenHeader title={quest.title} subtitle={`${cat.icon} ${cat.name} · רמה ${session.level} מתוך 5`} onBack={back} />
       <main className="screen__body drill__body">
         <ProgressDots states={dots} label={`שאלה ${Math.min(idx + 1, questions.length)} מתוך ${questions.length}`} />
         {result ? (
@@ -95,7 +95,7 @@ function DrillPlayerView({ questId }: { questId: string }) {
   );
 }
 
-interface QuestionViewProps {
+export interface QuestionViewProps {
   q: Question;
   index: number;
   total: number;
@@ -103,15 +103,19 @@ interface QuestionViewProps {
   onAnswer: (r: DrillResponse) => void;
   onNext: () => void;
   last: boolean;
+  /** Overrides the "question i of n" line (placement tests have no fixed length). */
+  counter?: string;
+  /** Label of the button after the last question. */
+  lastLabel?: string;
 }
 
-function QuestionView({ q, index, total, response, onAnswer, onNext, last }: QuestionViewProps) {
+export function QuestionView({ q, index, total, response, onAnswer, onNext, last, counter, lastLabel = 'לסיכום' }: QuestionViewProps) {
   const correct = response ? checkAnswer(q, response) : undefined;
   const say = speakable(q.prompt);
   const praise = useMemo(() => PRAISE[(index * 7 + total) % PRAISE.length], [index, total]);
   return (
     <section className={`drill__q ${response ? 'drill__q--answered' : ''}`} aria-labelledby={`q-${q.id}`}>
-      <p className="small muted center">שאלה {index + 1} מתוך {total}</p>
+      <p className="small muted center">{counter ?? `שאלה ${index + 1} מתוך ${total}`}</p>
       <Card padding="lg" className="drill__prompt">
         <h2 id={`q-${q.id}`} className="drill__prompt-text">
           <Segs segs={q.prompt} blank={q.type === 'blank' && response && 'choice' in response ? q.choices[response.choice] : null} />
@@ -129,7 +133,7 @@ function QuestionView({ q, index, total, response, onAnswer, onNext, last }: Que
           <strong className="feedback__title">{correct ? praise : 'כמעט! התשובה הנכונה:'}</strong>
           <p className="feedback__solution"><Segs segs={q.solution} /></p>
           {!correct && speakable(q.solution) && <ListenButton text={speakable(q.solution)} />}
-          <Button size="lg" block onClick={onNext} autoFocus icon={last ? 'trophy' : undefined}>{last ? 'לסיכום' : 'הבא'}</Button>
+          <Button size="lg" block onClick={onNext} autoFocus icon={last ? 'trophy' : undefined}>{last ? lastLabel : 'הבא'}</Button>
         </div>
       )}
     </section>
@@ -246,6 +250,13 @@ function Summary({ result, questions, responses, onRetry, onBack, onCelebrate }:
         <span className="small muted">כדי לעבור: {attempt.passScore} נכונות · ניסיון {attempt.attempt}</span>
       </Card>
       <p className="summary__msg">{message}</p>
+      {result.difficultyChange && (
+        <Card tone="soft" className={`notice notice--info adapt-note adapt-note--${result.difficultyChange.reason}`} data-testid="difficulty-change">
+          {result.difficultyChange.reason === 'strong'
+            ? `🚀 הולך לך מצוין! מהתרגול הבא עולים לרמה ${result.difficultyChange.to}.`
+            : `🌱 נתרגל קצת ברמה ${result.difficultyChange.to} כדי להתחזק, ואז נעלה שוב.`}
+        </Card>
+      )}
       {completion?.rewardRequested !== undefined && outcome === 'auto-approved' && (
         <Card tone="soft" className="notice notice--info"><Icon name="lock" size="sm" /> בארנק היה נעול פחות מהפרס, אז נפתח מה שהיה. אפשר לבקש מההורה להשלים.</Card>
       )}

@@ -1,14 +1,15 @@
 import { DomainError } from '../model/errors';
-import type { AppState, DrillAttempt, GuidedDrillSpec, Id, LedgerEntry, LevelChange, Quest, QuestCompletion, QuizDrillSpec, WeekId } from '../model/types';
+import type { AppState, DifficultyChange, DrillAttempt, GuidedDrillSpec, Id, LedgerEntry, LevelChange, Quest, QuestCompletion, QuizDrillSpec, WeekId } from '../model/types';
 import type { Ctx } from '../services/context';
 import { findCategory, findQuest } from '../services/categories';
-import { addXp, childLevel } from '../services/levels';
+import { addXp } from '../services/levels';
 import { questStatus, submitQuest } from '../services/quests';
 import { balanceOf } from '../services/wallet';
 import { weekIdOf } from '../services/week';
-import { clampLevel, drillSeed, generateDrill, isPass, scoreDrill } from './engine';
+import { drillSeed, generateDrill, isPass, scoreDrill } from './engine';
 import { findTemplate, type GuidedTemplate } from './guided';
 import type { Question, DrillResponse } from './types';
+import { applyQuizToDifficulty, currentDifficulty } from './adaptive';
 
 /** A drill in progress. Not persisted: it is fully reproducible from the seed and level. */
 export interface DrillSession {
@@ -40,6 +41,8 @@ export interface DrillResult {
   /** Agorot actually moved to available (may be less than the reward when the deposit is short). */
   credited: number;
   levelChange?: LevelChange;
+  /** The quiz moved the category difficulty (adaptive). */
+  difficultyChange?: DifficultyChange;
 }
 
 export const quizSpec = (q: Quest): QuizDrillSpec | undefined => (q.drill?.kind === 'quiz' ? q.drill : undefined);
@@ -49,9 +52,9 @@ export const guidedTemplateFor = (q: Quest): GuidedTemplate | undefined => {
   return g ? findTemplate(g.templateId) : undefined;
 };
 
-/** Difficulty for this child in the quest's category: their level, clamped to 1..5. */
+/** Difficulty for this child in the quest's category: placement/adaptive difficulty, else their level clamped to 1..5. */
 export function drillLevel(state: AppState, childId: Id, quest: Quest): number {
-  return clampLevel(childLevel(state, childId, quest.categoryId).level);
+  return currentDifficulty(state, childId, quest.categoryId);
 }
 
 export function attemptsFor(state: AppState, childId: Id, questId: Id, weekId?: WeekId): DrillAttempt[] {
@@ -121,8 +124,22 @@ function creditNow(state: AppState, ctx: Ctx, c: QuestCompletion, categoryId: Id
   return { state: xp.state, completion, credited, levelChange: xp.levelChange };
 }
 
-/** Scores an attempt, records it, and awards the quest only on a pass. */
+/**
+ * Scores an attempt, records it, awards the quest only on a pass, and adapts the category
+ * difficulty for the next quizzes (two strong quizzes → harder, a hard one → easier).
+ */
 export function finishDrill(state: AppState, ctx: Ctx, session: DrillSession, responses: readonly (DrillResponse | undefined)[]): DrillResult {
+  const r = scoreAndAward(state, ctx, session, responses);
+  const quest = findQuest(state, session.questId);
+  const ad = applyQuizToDifficulty(r.state, session.childId, quest.categoryId, session.level, r.attempt.correct, r.attempt.total);
+  if (ad.state === r.state) return r;
+  if (!ad.change) return { ...r, state: ad.state };
+  const attempt: DrillAttempt = { ...r.attempt, difficultyChange: ad.change };
+  const next = { ...ad.state, drillAttempts: (ad.state.drillAttempts ?? []).map((a) => (a.id === attempt.id ? attempt : a)) };
+  return { ...r, state: next, attempt, difficultyChange: ad.change };
+}
+
+function scoreAndAward(state: AppState, ctx: Ctx, session: DrillSession, responses: readonly (DrillResponse | undefined)[]): DrillResult {
   const quest = findQuest(state, session.questId);
   const spec = quizSpec(quest);
   if (!spec) throw new DomainError('NOT_A_DRILL');

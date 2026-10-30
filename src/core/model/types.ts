@@ -136,6 +136,8 @@ export interface DrillAttempt {
   results: boolean[];
   /** Completion created by this attempt (pass only). */
   completionId?: Id;
+  /** Difficulty change this attempt caused (adaptive difficulty). */
+  difficultyChange?: DifficultyChange;
 }
 
 export interface WeeklyBudget {
@@ -179,6 +181,41 @@ export interface SkillProgress {
   startLevel: number;
   /** XP earned since the starting level. */
   xp: number;
+  /**
+   * Current drill difficulty (1..5) for quizzes in this category. Absent = derived from the level
+   * (data saved before placement tests existed). Set by the placement test, adapted after each quiz,
+   * and overridable by the parent.
+   */
+  difficulty?: number;
+  /** Who set `difficulty` last. */
+  difficultySource?: DifficultySource;
+  /** Consecutive quizzes at the current difficulty scored >= 90% (2 → level up). */
+  strongStreak?: number;
+  /** Result of the latest placement test in this category. */
+  placement?: PlacementRecord;
+}
+
+export type DifficultySource = 'placement' | 'adaptive' | 'parent';
+
+export type PlacementKind = 'math' | 'english';
+
+export interface PlacementRecord {
+  kind: PlacementKind;
+  /** Placed difficulty 1..5. */
+  level: number;
+  correct: number;
+  total: number;
+  /** Difficulty of each question asked, in order (the staircase path). */
+  path: number[];
+  finishedAt: string;
+}
+
+/** Drill difficulty moved after a quiz (or by the placement test). */
+export interface DifficultyChange {
+  categoryId: Id;
+  from: number;
+  to: number;
+  reason: 'strong' | 'struggle';
 }
 
 export interface LevelCurve {
