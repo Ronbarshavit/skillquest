@@ -1,0 +1,23 @@
+{
+  "//": "Core layer: pure TypeScript. No DOM lib and no JSX, so any React/DOM usage fails to type-check.",
+  "compilerOptions": {
+    "composite": true,
+    "tsBuildInfoFile": "./node_modules/.tmp/core.tsbuildinfo",
+    "target": "ES2022",
+    "lib": [
+      "ES2022"
+    ],
+    "types": [],
+    "module": "ESNext",
+    "moduleResolution": "bundler",
+    "strict": true,
+    "noUnusedLocals": true,
+    "noUnusedParameters": true,
+    "noEmit": true,
+    "skipLibCheck": true,
+    "isolatedModules": true
+  },
+  "include": [
+    "src/core"
+  ]
+}

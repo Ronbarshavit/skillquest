@@ -1,0 +1,24 @@
+/* Global reset + typography. Only var(--sq-*) values and logical properties. */
+*, *::before, *::after { box-sizing: border-box; }
+html { -webkit-text-size-adjust: 100%; }
+body {
+  margin: 0;
+  background: var(--sq-color-bg);
+  color: var(--sq-color-text);
+  font-family: var(--sq-font-family);
+  font-size: var(--sq-font-size-md);
+  line-height: var(--sq-line-height-normal);
+  -webkit-font-smoothing: antialiased;
+  transition: background-color var(--sq-motion-duration-normal) var(--sq-motion-ease-standard);
+}
+h1, h2, h3, p { margin: 0; }
+h2 { font-size: var(--sq-font-size-lg); font-weight: var(--sq-font-weight-bold); }
+h3 { font-size: var(--sq-font-size-md); font-weight: var(--sq-font-weight-medium); }
+button, input, textarea, select { font: inherit; color: inherit; }
+:focus-visible { outline: var(--sq-size-focus-ring) solid var(--sq-color-focus); outline-offset: var(--sq-space-1); }
+.sq-visually-hidden {
+  position: absolute; inline-size: 1px; block-size: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap;
+}
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation-duration: 0.01ms !important; animation-iteration-count: 1 !important; transition-duration: 0.01ms !important; }
+}
