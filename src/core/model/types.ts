@@ -34,6 +34,41 @@ export interface SkillCategory {
   order: number;
 }
 
+/** Quiz topics the drill engine can generate (see core/drills). */
+export type QuizTopic =
+  | 'times-tables'
+  | 'mental-math'
+  | 'fractions'
+  | 'geometry'
+  | 'word-problems'
+  | 'math-mix'
+  | 'en-vocab'
+  | 'en-sentences'
+  | 'en-fill'
+  | 'en-mix';
+
+/** A generated quiz: N questions, pass with at least `passScore` correct. */
+export interface QuizDrillSpec {
+  kind: 'quiz';
+  topic: QuizTopic;
+  /** Number of questions (3..20). */
+  length: number;
+  /** Correct answers needed to pass (1..length). */
+  passScore: number;
+  /** Passing credits the reward + XP immediately (no parent approval). */
+  autoApprove: boolean;
+  /** Times-tables only: focus on one table (2..15). */
+  table?: number;
+}
+
+/** A guided real-world activity (steps checklist, optional timers) that a parent approves. */
+export interface GuidedDrillSpec {
+  kind: 'guided';
+  templateId: string;
+}
+
+export type DrillSpec = QuizDrillSpec | GuidedDrillSpec;
+
 export interface Quest {
   id: Id;
   categoryId: Id;
@@ -42,6 +77,8 @@ export interface Quest {
   reward: Agorot;
   xp: number;
   active: boolean;
+  /** Absent = legacy "mark as done" quest. */
+  drill?: DrillSpec;
 }
 
 export type CompletionStatus = 'todo' | 'submitted' | 'approved' | 'rejected';
@@ -68,6 +105,37 @@ export interface QuestCompletion {
   levelChange?: LevelChange;
   /** Child has seen the celebration for this approval. */
   celebrated?: boolean;
+  /** Quiz result that produced this completion. */
+  drill?: { attemptId: Id; correct: number; total: number };
+  /** Guided activity: steps the child marked + what they told the parent. */
+  guided?: { templateId: string; stepsDone: number; stepsTotal: number; note?: string };
+  /** Approved automatically by passing a quiz (no parent step). */
+  autoApproved?: boolean;
+  /** Set when the credited reward was capped by the locked deposit: the full quest reward. */
+  rewardRequested?: Agorot;
+}
+
+/** One finished quiz attempt (kept as history; best score is derived). */
+export interface DrillAttempt {
+  id: Id;
+  childId: Id;
+  questId: Id;
+  weekId: WeekId;
+  /** 1-based attempt number within the week (part of the seed). */
+  attempt: number;
+  seed: string;
+  /** Difficulty level (1..5) used to generate the questions. */
+  level: number;
+  topic: QuizTopic;
+  total: number;
+  correct: number;
+  passScore: number;
+  passed: boolean;
+  finishedAt: string;
+  /** Per-question correctness, in order. */
+  results: boolean[];
+  /** Completion created by this attempt (pass only). */
+  completionId?: Id;
 }
 
 export interface WeeklyBudget {
@@ -169,6 +237,8 @@ export interface AppState {
   budgets: WeeklyBudget[];
   ledger: LedgerEntry[];
   progress: SkillProgress[];
+  /** Quiz attempt history (absent in data saved before drills existed). */
+  drillAttempts?: DrillAttempt[];
   /** Week the state was last reset for. */
   currentWeekId: WeekId;
 }

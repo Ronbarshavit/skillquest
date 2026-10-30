@@ -3,7 +3,8 @@ import { Amount, Badge, Button, Card, Icon, ScreenHeader, formatShekels } from '
 import { actions, useSelectors } from '../hooks/useStore';
 import { useSession } from '../hooks/session';
 import { useToast } from '../components/Toast';
-import { describeError, statusLabel, statusTone } from '../i18n/he';
+import { guidedTemplateFor, quizSpec } from '@core/index';
+import { describeError, statusLabel, statusTone, topicLabel } from '../i18n/he';
 
 export function QuestDetail() {
   const { questId = '' } = useParams();
@@ -19,6 +20,11 @@ export function QuestDetail() {
   const last = sel.latestCompletion(activeChildId, quest.id);
   const { locked } = sel.balance(activeChildId);
   const canSubmit = status === 'todo' || status === 'rejected';
+  const quiz = quizSpec(quest);
+  const tpl = guidedTemplateFor(quest);
+  const attempts = quiz ? sel.attempts(activeChildId, quest.id) : [];
+  const best = quiz ? sel.bestAttempt(activeChildId, quest.id) : undefined;
+  const level = sel.drillLevel(activeChildId, quest.id);
 
   const submit = () => {
     try {
@@ -50,17 +56,54 @@ export function QuestDetail() {
           </div>
         </Card>
 
+        {quiz && (
+          <Card className="drill-info">
+            <div className="drill-info__head">
+              <span className="drill-info__icon" aria-hidden>🧠</span>
+              <div className="drill-info__text">
+                <strong>{topicLabel[quiz.topic]}{quiz.table ? ` – לוח ${quiz.table}` : ''}</strong>
+                <span className="small muted">{quiz.length} שאלות · צריך {quiz.passScore} נכונות כדי לעבור · שלב {level}</span>
+              </div>
+            </div>
+            <div className="drill-info__badges">
+              {quiz.autoApprove ? <Badge tone="success">הפרס נפתח מיד כשעוברים</Badge> : <Badge tone="info">ההורה מאשר אחרי שעוברים</Badge>}
+              {best && <Badge tone="primary">שיא: {best.correct}/{best.total}</Badge>}
+              {attempts.length > 0 && <Badge>{attempts.length === 1 ? 'ניסיון אחד השבוע' : `${attempts.length} ניסיונות השבוע`}</Badge>}
+            </div>
+          </Card>
+        )}
+        {tpl && (
+          <Card className="drill-info">
+            <div className="drill-info__head">
+              <span className="drill-info__icon" aria-hidden>{tpl.emoji}</span>
+              <div className="drill-info__text">
+                <strong>{tpl.title}</strong>
+                <span className="small muted">{tpl.steps.length} שלבים{tpl.steps.some((x) => x.timerSec) ? ' · עם טיימר' : ''} · ההורה מאשר</span>
+              </div>
+            </div>
+            <p className="small">{tpl.criteria}</p>
+          </Card>
+        )}
+
         {status === 'rejected' && last?.note && (
           <Card tone="soft"><strong>הערה מההורה:</strong> {last.note}</Card>
         )}
-        {canSubmit && locked < quest.reward && (
+        {canSubmit && !quiz && locked < quest.reward && (
           <Card tone="soft" className="notice notice--info">
             <Icon name="lock" size="sm" /> כרגע נעולים {formatShekels(locked)} בארנק. אפשר יהיה לאשר אחרי הפקדה נוספת.
           </Card>
         )}
 
         <div className="sticky-cta">
-          {canSubmit ? (
+          {quiz ? (
+            <Button size="lg" block icon="sparkle" onClick={() => nav(`/child/quest/${quest.id}/play`)}>
+              {status === 'approved' || status === 'submitted' ? 'עוד תרגול 💪' : attempts.length ? 'לנסות שוב' : 'מתחילים לתרגל!'}
+            </Button>
+          ) : tpl && canSubmit ? (
+            <Button size="lg" block icon="sparkle" onClick={() => nav(`/child/quest/${quest.id}/activity`)}>
+              {status === 'rejected' ? 'לנסות שוב' : 'מתחילים!'}
+            </Button>
+          ) : canSubmit ? (
             <Button size="lg" block icon="check" onClick={submit}>
               {status === 'rejected' ? 'ניסיתי שוב – שליחה לאישור' : 'סיימתי! שליחה לאישור'}
             </Button>

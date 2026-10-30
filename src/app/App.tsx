@@ -7,6 +7,8 @@ import { ChildHome } from './screens/ChildHome';
 import { QuestList } from './screens/QuestList';
 import { QuestDetail } from './screens/QuestDetail';
 import { Celebration } from './screens/Celebration';
+import { DrillPlayer } from './screens/DrillPlayer';
+import { GuidedActivity } from './screens/GuidedActivity';
 import { ParentDashboard } from './screens/ParentDashboard';
 import { InterestAreas } from './screens/InterestAreas';
 import { CategoryEditor } from './screens/CategoryEditor';
@@ -43,6 +45,8 @@ export function App() {
         <Route path="/child" element={<ChildHome />} />
         <Route path="/child/category/:categoryId" element={<QuestList />} />
         <Route path="/child/quest/:questId" element={<QuestDetail />} />
+        <Route path="/child/quest/:questId/play" element={<DrillPlayer />} />
+        <Route path="/child/quest/:questId/activity" element={<GuidedActivity />} />
         <Route path="/celebrate/:completionId" element={<Celebration />} />
         <Route path="/parent" element={<ParentOnly><ParentDashboard /></ParentOnly>} />
         <Route path="/parent/children" element={<ParentOnly><ManageChildren /></ParentOnly>} />

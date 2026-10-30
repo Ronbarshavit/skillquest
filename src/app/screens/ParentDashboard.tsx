@@ -96,6 +96,17 @@ export function ParentDashboard() {
                     </div>
                     <Amount agorot={c.reward} tone="earned" withIcon />
                   </div>
+                  {c.drill && (
+                    <p className="approval__detail small">
+                      🧠 תוצאת התרגול: <bdi dir="ltr"><strong>{c.drill.correct}/{c.drill.total}</strong></bdi> נכונות
+                    </p>
+                  )}
+                  {c.guided && (
+                    <div className="approval__detail small">
+                      <span>✅ סומנו {c.guided.stepsDone} מתוך {c.guided.stepsTotal} שלבים</span>
+                      {c.guided.note && <blockquote className="approval__note">״{c.guided.note}״</blockquote>}
+                    </div>
+                  )}
                   {!check.ok && (
                     <p className="notice notice--warning small">
                       <Icon name="lock" size="sm" /> נעולים רק {formatShekels(check.locked)} – חסרים {formatShekels(check.shortfall)}. יש להפקיד קודם.

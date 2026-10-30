@@ -1,5 +1,5 @@
 import { Navigate, useNavigate, useParams } from 'react-router-dom';
-import { Amount, Button, Card, ScreenHeader } from '@design/index';
+import { Amount, Button, Card, ScreenHeader, formatShekels } from '@design/index';
 import { actions, useSelectors } from '../hooks/useStore';
 import { useSession } from '../hooks/session';
 
@@ -30,13 +30,21 @@ export function Celebration() {
           {CONFETTI.map((i) => <span key={i} className={`confetti__piece confetti__piece--${i % 6}`} style={{ insetInlineStart: `${(i * 37) % 100}%`, animationDelay: `${(i % 6) * 90}ms` }} />)}
         </div>
         <div className="celebrate__trophy" aria-hidden>🏆</div>
-        <h2 className="celebrate__title">{child?.name}, המשימה אושרה!</h2>
+        <h2 className="celebrate__title">{child?.name}, {c.autoApproved ? 'עברת את התרגול!' : 'המשימה אושרה!'}</h2>
         <p className="muted">{quest?.title}</p>
+        {c.drill && (
+          <p className="celebrate__score">
+            <bdi dir="ltr">{c.drill.correct}/{c.drill.total}</bdi> תשובות נכונות 🧠
+          </p>
+        )}
 
         <Card className="celebrate__card" padding="lg">
           <span className="small muted">נפתח לארנק</span>
           <Amount agorot={c.reward} tone="earned" size="xl" withIcon />
           <span className="xp">+{c.xp} XP</span>
+          {c.rewardRequested !== undefined && (
+            <span className="small muted">הפרס המלא הוא {formatShekels(c.rewardRequested)} – בארנק היה נעול פחות, אז נפתח מה שהיה.</span>
+          )}
         </Card>
 
         {lvl && lvlCat && (

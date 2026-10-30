@@ -15,7 +15,9 @@ export type DomainErrorCode =
   | 'CONFIRMATION_REQUIRED'
   | 'ALREADY_ONBOARDED'
   | 'DUPLICATE_CHILD'
-  | 'TOO_MANY_CHILDREN';
+  | 'TOO_MANY_CHILDREN'
+  | 'NOT_A_DRILL'
+  | 'DRILL_INCOMPLETE';
 
 export class DomainError extends Error {
   constructor(

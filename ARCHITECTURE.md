@@ -8,6 +8,8 @@ src/
   core/      pure TypeScript domain – no React, no DOM, no browser APIs
     model/        types.ts (entities, AppState), errors.ts (DomainError codes)
     services/     week, money, levels, wallet, categories, budget, quests, weekReset, context
+    drills/       real practice: seeded generators (math, english, wordbank), guided templates,
+                  engine (generate/check/score), service (startDrill/finishDrill/submitGuided), migrate
     repository/   StateRepository interface + LocalStorageRepository / InMemoryRepository
     seed.ts       default categories, demo family, empty family
     store.ts      SkillQuestStore facade (getState/subscribe/commit → repository.save)
@@ -22,6 +24,7 @@ src/
 scripts/
   check-layers.mjs   import-boundary, no-hard-coded-colour, logical-CSS guard (runs in `npm run build`)
   screenshots.mjs    Playwright 390×844 captures + RTL/offline/a11y-ish checks
+  drill-bot.mjs      test helper: re-generates the on-screen drill from data-seed/data-level and answers it
   make-icons.mjs     renders public/icons/icon.svg to the PWA PNG sizes
 ```
 
@@ -74,14 +77,36 @@ Screens read via selectors and call store actions; they contain no business rule
   core store, and an easier path to React Native if a native app is wanted later (core and tokens port
   as-is). Because core is pure TS, moving to Vue later would only rewrite `design` primitives and `app`.
 
+## Drills (real practice)
+
+* A quest may carry `drill`: `{kind:'quiz', topic, length, passScore, autoApprove, table?}` or
+  `{kind:'guided', templateId}`; quests without one keep the old "סיימתי" → parent-approval flow.
+* Quiz topics: times tables, mental math, fractions, geometry (SVG figures), Hebrew word problems
+  (varied names/genders), English vocab Heb↔Eng with emoji, sentences, fill-in-the-blank, match, mix.
+  Question types: multiple choice, numeric (NumPad), blank, match. Difficulty = the child's level in
+  the category, clamped 1–5 (ages 8–14).
+* Determinism: `seed = child|quest|week|attempt` → `createRng` → `generateDrill`. `finishDrill`
+  regenerates the questions from the stored seed and scores the raw responses, so the UI is never
+  trusted for correctness. Every attempt is stored (`drillAttempts`), best score shown per week.
+* Reward/XP only on a pass, once per quest per week; later passes are "practice". With
+  `autoApprove` (default for quizzes) a pass moves money locked→available immediately, capped by the
+  child's locked deposit (the shortfall is reported), then the Celebration screen opens. Otherwise a
+  `submitted` completion with the score goes to the parent dashboard.
+* Guided activities (sport, music, soft skills, any custom category): steps with optional timers,
+  a short reflection, and a "what the parent checks" line; the parent approves.
+* English text is rendered in `<bdi lang="en" dir="ltr">`; math expressions in LTR `<bdi>`; an
+  optional speechSynthesis listen button appears when the browser supports it.
+
 ## Testing
 
 * `npm test` – Vitest unit tests for core (levels, wallet/approval funds rule, budget, categories,
-  week reset, store + repository round-trip).
+  week reset, store + repository round-trip, drill generators/answers, scoring, awarding, auto vs
+  manual approval, locked-deposit cap, guided flow, migration).
 * `npm run build` – layer check + `tsc -b` (core/app/node projects) + Vite/PWA build.
 * `npm run screenshots` – requires `vite preview` on :4319; saves `screenshots/*.png` and asserts
   RTL direction, right-anchored layout, insufficient-funds UX, level-up, reduced-motion, theme switch,
-  custom category visibility, service-worker offline load, and no console errors.
+  custom category visibility, service-worker offline load, drills played end-to-end (fail → retry →
+  pass → celebration, English vocab, geometry figure, guided activity), and no console errors.
 
 ## Known gaps (MVP)
 

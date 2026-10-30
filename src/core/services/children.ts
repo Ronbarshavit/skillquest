@@ -117,5 +117,6 @@ export function removeChild(s: AppState, childId: Id, confirmed: boolean): AppSt
     ledger: keep(s.ledger),
     completions: keep(s.completions),
     progress: keep(s.progress),
+    ...(s.drillAttempts ? { drillAttempts: keep(s.drillAttempts) } : {}),
   };
 }

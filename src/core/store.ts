@@ -11,6 +11,9 @@ import { createDemoState } from './seed';
 import * as pin from './services/pin';
 import * as onboarding from './services/onboarding';
 import * as children from './services/children';
+import * as drills from './drills/service';
+import { migrateState } from './drills/migrate';
+import type { DrillResponse } from './drills/types';
 
 type Listener = () => void;
 
@@ -28,7 +31,8 @@ export class SkillQuestStore {
     private readonly ctx: Ctx = defaultCtx,
     private readonly seed: (ctx: Ctx) => AppState = createDemoState,
   ) {
-    const loaded = repo.load() ?? seed(ctx);
+    const stored = repo.load();
+    const loaded = stored ? migrateState(stored) : seed(ctx);
     this.state = startNewWeekIfNeeded(loaded, ctx).state;
     repo.save(this.state);
   }
@@ -71,6 +75,21 @@ export class SkillQuestStore {
   }
   reject(completionId: Id, note?: string) {
     this.commit(quests.rejectCompletion(this.state, this.ctx, completionId, note));
+  }
+  // Drills
+  /** New attempt for a quiz quest (not persisted until finished). */
+  startDrill(childId: Id, questId: Id): drills.DrillSession {
+    return drills.startDrill(this.state, this.ctx, childId, questId);
+  }
+  finishDrill(session: drills.DrillSession, responses: readonly (DrillResponse | undefined)[]): Omit<drills.DrillResult, 'state'> {
+    const { state, ...rest } = drills.finishDrill(this.state, this.ctx, session, responses);
+    this.commit(state);
+    return rest;
+  }
+  submitGuided(childId: Id, questId: Id, input: drills.GuidedSubmission): QuestCompletion {
+    const r = drills.submitGuided(this.state, this.ctx, childId, questId, input);
+    this.commit(r.state);
+    return r.completion;
   }
   markCelebrated(completionId: Id) {
     this.commit(quests.markCelebrated(this.state, completionId));

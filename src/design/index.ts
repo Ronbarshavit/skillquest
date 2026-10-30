@@ -17,3 +17,5 @@ export * from './components/Switch';
 export * from './components/Field';
 export * from './components/Stepper';
 export * from './components/PinPad';
+export * from './components/NumPad';
+export * from './components/ProgressDots';

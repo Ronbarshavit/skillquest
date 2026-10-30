@@ -26,6 +26,8 @@ export const errorMessage: Record<DomainErrorCode, string> = {
   INVALID_AMOUNT: 'סכום לא תקין',
   INVALID_INPUT: 'יש למלא את כל השדות כראוי',
   ALREADY_SUBMITTED: 'המשימה כבר נשלחה השבוע',
+  NOT_A_DRILL: 'למשימה הזו אין תרגול',
+  DRILL_INCOMPLETE: 'עוד לא סיימת את כל השלבים',
   NOT_SUBMITTED: 'המשימה לא ממתינה לאישור',
   CATEGORY_DISABLED: 'תחום העניין הזה כבוי',
   QUEST_INACTIVE: 'המשימה לא פעילה',
@@ -49,3 +51,16 @@ export const levelLabel = (n: number) => `שלב ${n}`;
 
 export const formatDateTime = (iso: string) =>
   new Intl.DateTimeFormat('he-IL', { weekday: 'short', day: 'numeric', month: 'numeric', hour: '2-digit', minute: '2-digit' }).format(new Date(iso));
+
+export const topicLabel: Record<import('@core/index').QuizTopic, string> = {
+  'times-tables': 'לוח הכפל',
+  'mental-math': 'חשבון בראש',
+  fractions: 'שברים',
+  geometry: 'גאומטריה',
+  'word-problems': 'בעיות מילוליות',
+  'math-mix': 'מתמטיקה – מיקס',
+  'en-vocab': 'אוצר מילים באנגלית',
+  'en-sentences': 'משפטים באנגלית',
+  'en-fill': 'השלמת משפטים באנגלית',
+  'en-mix': 'אנגלית – מיקס',
+};

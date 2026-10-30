@@ -165,3 +165,40 @@
 @keyframes sq-shake { 25% { transform: translateX(-6px); } 75% { transform: translateX(6px); } }
 @media (prefers-reduced-motion: reduce) { .sq-pin--error .sq-pin__dots { animation: none; } }
 [dir="rtl"] [dir="ltr"] .sq-icon--mirror { transform: none; }
+
+/* NumPad */
+.sq-numpad { display: flex; flex-direction: column; align-items: center; gap: var(--sq-space-3); inline-size: 100%; }
+.sq-numpad__display {
+  display: flex; align-items: baseline; justify-content: center; gap: var(--sq-space-2);
+  min-inline-size: 60%; min-block-size: var(--sq-space-12); padding-inline: var(--sq-space-4);
+  border-radius: var(--sq-radius-md); border: calc(var(--sq-size-border-width) * 2) solid var(--sq-color-border);
+  background: var(--sq-color-surface); font-family: var(--sq-font-family-numeric);
+  font-size: var(--sq-font-size-xxl); font-weight: var(--sq-font-weight-bold); font-variant-numeric: tabular-nums;
+}
+.sq-numpad__unit { font-size: var(--sq-font-size-md); color: var(--sq-color-text-muted); font-weight: var(--sq-font-weight-medium); }
+.sq-numpad--correct .sq-numpad__display { border-color: var(--sq-color-success); background: var(--sq-color-success-soft); }
+.sq-numpad--wrong .sq-numpad__display { border-color: var(--sq-color-danger); background: var(--sq-color-danger-soft); }
+.sq-numpad__keys { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: var(--sq-space-2); inline-size: 100%; max-inline-size: calc(var(--sq-size-pin-key) * 4.5); }
+.sq-numpad__key {
+  block-size: calc(var(--sq-size-tap-target) * 1.25); border-radius: var(--sq-radius-md);
+  border: var(--sq-size-border-width) solid var(--sq-color-border); background: var(--sq-color-surface); color: var(--sq-color-text);
+  font-size: var(--sq-font-size-xl); font-weight: var(--sq-font-weight-medium); font-family: var(--sq-font-family-numeric);
+  cursor: pointer; display: inline-flex; align-items: center; justify-content: center; box-shadow: var(--sq-shadow-sm);
+}
+.sq-numpad__key:active:not(:disabled) { transform: scale(0.95); background: var(--sq-color-surface-alt); }
+.sq-numpad__key:disabled { opacity: 0.4; cursor: not-allowed; }
+.sq-numpad__key--fn { background: transparent; box-shadow: none; border-color: transparent; color: var(--sq-color-text-muted); }
+.sq-numpad__ok { max-inline-size: calc(var(--sq-size-pin-key) * 4.5); }
+@media (prefers-reduced-motion: reduce) { .sq-numpad__key:active:not(:disabled) { transform: none; } }
+
+/* ProgressDots */
+.sq-dots { display: flex; flex-wrap: wrap; justify-content: center; gap: var(--sq-space-2); margin: 0; padding: 0; list-style: none; }
+.sq-dots__dot {
+  inline-size: var(--sq-space-3); block-size: var(--sq-space-3); border-radius: var(--sq-radius-pill);
+  background: var(--sq-color-track);
+  transition: transform var(--sq-motion-duration-fast) var(--sq-motion-ease-standard), background-color var(--sq-motion-duration-fast) var(--sq-motion-ease-standard);
+}
+.sq-dots__dot--current { background: var(--sq-color-primary); transform: scale(1.35); }
+.sq-dots__dot--correct { background: var(--sq-color-success); }
+.sq-dots__dot--wrong { background: var(--sq-color-danger); }
+@media (prefers-reduced-motion: reduce) { .sq-dots__dot { transition: none; } .sq-dots__dot--current { transform: none; outline: var(--sq-size-focus-ring) solid var(--sq-color-secondary); } }

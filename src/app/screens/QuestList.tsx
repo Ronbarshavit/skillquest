@@ -33,6 +33,8 @@ export function QuestList() {
                     <div className="quest-row__meta">
                       <Badge tone={statusTone[st]}>{statusLabel[st]}</Badge>
                       <Badge tone="accent" icon="star">+{q.xp} XP</Badge>
+                      {q.drill?.kind === 'quiz' && <Badge tone="info">🧠 תרגול</Badge>}
+                      {q.drill?.kind === 'guided' && <Badge tone="info">✅ שלבים</Badge>}
                     </div>
                   </div>
                   <Amount agorot={q.reward} tone="earned" size="md" withIcon />

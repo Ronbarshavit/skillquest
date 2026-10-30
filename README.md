@@ -1,6 +1,8 @@
 # SkillQuest – משימות ודמי כיס
 
-Hebrew RTL PWA: parents fund a weekly allowance, children unlock it by completing skill quests.
+Hebrew RTL PWA: parents fund a weekly allowance, children unlock it by completing skill quests –
+real interactive drills (math, English) that can auto-approve on a pass, and guided activities
+(sport, music, soft skills) with timers and checklists that the parent approves.
 See `ARCHITECTURE.md` for the design; `src/design/README.md` for tokens.
 
 ## Run locally

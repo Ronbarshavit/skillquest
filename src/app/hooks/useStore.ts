@@ -13,6 +13,9 @@ import {
   visibleCategories,
   allCategories,
   latestCompletion,
+  attemptsFor,
+  bestAttempt,
+  drillLevel,
   type AppState,
   type Id,
 } from '@core/index';
@@ -48,5 +51,11 @@ export function useSelectors() {
     canApprove: (completionId: Id) => canApprove(s, completionId),
     uncelebrated: (childId: Id) => uncelebrated(s, childId),
     completion: (id: Id) => s.completions.find((c) => c.id === id),
+    attempts: (childId: Id, questId: Id) => attemptsFor(s, childId, questId, s.currentWeekId),
+    bestAttempt: (childId: Id, questId: Id) => bestAttempt(s, childId, questId),
+    drillLevel: (childId: Id, questId: Id) => {
+      const q = s.quests.find((x) => x.id === questId);
+      return q ? drillLevel(s, childId, q) : 1;
+    },
   };
 }

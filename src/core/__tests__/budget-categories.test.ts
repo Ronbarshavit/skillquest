@@ -37,13 +37,13 @@ describe('interest areas', () => {
 describe('budget allocation', () => {
   it('sums active quest rewards in enabled categories vs the weekly budget', () => {
     const ctx = testCtx();
-    let s = setWeeklyBudget(createEmptyState(ctx), 'child-1', 5000);
+    let s = setWeeklyBudget(createEmptyState(ctx), 'child-1', 8000);
     const a = allocationFor(s, 'child-1');
-    expect(a.allocated).toBe(4500); // all 11 default quests
-    expect(a.remaining).toBe(500);
+    expect(a.allocated).toBe(7600); // all 19 default quests
+    expect(a.remaining).toBe(400);
     expect(a.overAllocated).toBe(false);
     s = setCategoryEnabled(s, 'cat-music', false);
-    expect(allocationFor(s, 'child-1').allocated).toBe(3400);
+    expect(allocationFor(s, 'child-1').allocated).toBe(6100);
     s = setWeeklyBudget(s, 'child-1', 2000);
     expect(allocationFor(s, 'child-1').overAllocated).toBe(true);
   });

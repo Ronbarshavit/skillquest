@@ -1,5 +1,6 @@
 import { DomainError } from '../model/errors';
-import type { Agorot, AppState, Id, Quest, SkillCategory } from '../model/types';
+import type { Agorot, AppState, DrillSpec, Id, Quest, SkillCategory } from '../model/types';
+import { validateDrillSpec } from '../drills/spec';
 import type { Ctx } from './context';
 import { assertNonNegativeAmount } from './money';
 
@@ -74,6 +75,8 @@ export interface NewQuest {
   description: string;
   reward: Agorot;
   xp: number;
+  /** Optional real drill (quiz or guided activity). Absent = mark-as-done. */
+  drill?: DrillSpec;
 }
 
 export function addQuest(state: AppState, ctx: Ctx, input: NewQuest): { state: AppState; quest: Quest } {
@@ -90,6 +93,7 @@ export function addQuest(state: AppState, ctx: Ctx, input: NewQuest): { state: A
     reward: input.reward,
     xp: input.xp,
     active: true,
+    ...(input.drill ? { drill: validateDrillSpec(input.drill) } : {}),
   };
   return { state: { ...state, quests: [...state.quests, quest] }, quest };
 }

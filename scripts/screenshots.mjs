@@ -4,6 +4,7 @@
 //   SQ_URL=http://127.0.0.1:4319/skillquest/ SQ_SHOTS=/tmp/sq-pages-shots npm run screenshots
 import { chromium } from 'playwright-core';
 import { mkdirSync } from 'node:fs';
+import { closeCore, playDrill } from './drill-bot.mjs';
 
 const BASE = process.env.SQ_URL ?? 'http://127.0.0.1:4319/';
 const OUT = (process.env.SQ_SHOTS ?? new URL('../screenshots/', import.meta.url).pathname).replace(/\/?$/, '/');
@@ -71,14 +72,27 @@ const hdr = await page.evaluate(() => {
 check('back button at inline-start (right side)', hdr.back > hdr.title, JSON.stringify(hdr));
 await shot('02-quest-list');
 
-// 3. Quest detail (todo)
+// 3. Quest detail (quiz info card)
 await page.locator('.quest-row', { hasText: 'בעיות מילוליות' }).click();
 await page.waitForURL(/quest\/q-math-2/);
 await page.waitForTimeout(200);
+check('quiz quest shows drill info + start button', (await page.locator('.drill-info').isVisible()) && (await page.getByRole('button', { name: /מתחילים לתרגל/ }).isVisible()));
 await shot('03-quest-detail');
-await page.getByRole('button', { name: /סיימתי/ }).click();
-await page.waitForTimeout(300);
+
+// 3b. Guided activity (sport: jump rope) → steps + timer → sent to the parent
+await go('/child/quest/q-sport-2/activity');
+check('guided activity lists steps', (await page.locator('.step').count()) >= 3);
+await page.locator('.timer').first().getByRole('button', { name: 'התחלה' }).click();
+await page.waitForTimeout(1200);
+await shot('25-guided-activity', { full: false });
+const stepBoxes = page.locator('.step__check');
+for (let i = 0, n = await stepBoxes.count(); i < n; i++) if ((await stepBoxes.nth(i).getAttribute('aria-checked')) !== 'true') await stepBoxes.nth(i).click();
+const reflect = page.locator('textarea');
+if (await reflect.count()) await reflect.first().fill('הצלחתי 45 קפיצות בסבב השני');
+await page.getByRole('button', { name: 'סיימתי! שליחה לאישור' }).click();
+await page.waitForTimeout(400);
 await shot('03b-quest-detail-submitted', { full: false });
+check('guided submission shows as waiting for approval', await page.getByText(/מחכה לאישור/).first().isVisible().catch(() => false));
 
 // 4. Parent dashboard
 await page.goto(BASE + '#/child');
@@ -362,6 +376,52 @@ await page.getByRole('button', LOCK_BTN).click().catch(async () => { await go('/
 await go('/child');
 const kidNames2 = await page.locator('.chip').allTextContents();
 check('child mode reflects changes', !kidNames2.some((n) => n.includes('שועל')) && kidNames2.some((n) => n.includes('ינשופי')), kidNames2.join(','));
+
+// Drills: math (mental math, auto-approve) fail → retry → pass → celebration; English vocab; geometry figure
+await go('/reset');
+await page.waitForURL(/#\/child$/);
+const lockedBefore = await page.locator('.wallet__cell--locked').textContent();
+await go('/child/quest/q-math-3/play');
+await playDrill(page, () => false, async (i, phase) => {
+  if (i === 0 && phase === 'question') { await page.waitForTimeout(500); await shot('21-drill-math-question', { full: false }); }
+});
+check('fail summary after 0/10', await page.locator('.summary--fail').isVisible());
+await page.waitForTimeout(800);
+await shot('23b-drill-fail-summary', { full: false });
+await page.getByRole('button', { name: 'לנסות שוב' }).click();
+await playDrill(page, (i) => i !== 1, async (i, phase) => {
+  if (phase === 'feedback' && i < 2) await page.waitForTimeout(700);
+  if (i === 0 && phase === 'feedback') await shot('22-drill-feedback-correct', { full: false });
+  if (i === 1 && phase === 'feedback') await shot('22b-drill-feedback-wrong', { full: false });
+});
+check('pass summary after 9/10', (await page.locator('.summary--pass').isVisible()) && (await page.locator('.summary__num').textContent()).includes('9'));
+await page.waitForTimeout(800);
+await shot('23-drill-pass-summary', { full: false });
+await page.getByRole('button', { name: 'לחגיגה!' }).click();
+await page.waitForURL(/celebrate/);
+await page.waitForTimeout(1600);
+await shot('23c-drill-celebration', { full: false });
+await go('/child');
+const lockedAfter = await page.locator('.wallet__cell--locked').textContent();
+check('auto-approved pass moved money out of "locked"', lockedBefore !== lockedAfter, `${lockedBefore} → ${lockedAfter}`);
+await go('/child/quest/q-lang-1/play');
+await page.locator('.drill[data-index="0"]').waitFor();
+const enLang = await page.locator('.drill [lang="en"]').first().getAttribute('dir').catch(() => null);
+check('English text is marked lang=en dir=ltr', enLang === 'ltr', String(enLang));
+await page.waitForTimeout(500);
+await shot('24-drill-english-vocab', { full: false });
+await playDrill(page, () => true);
+check('English vocab pass (manual approval) summary', await page.locator('.summary--pass').isVisible());
+await go('/child/quest/q-math-5/play');
+await page.locator('.drill[data-index="0"]').waitFor();
+check('geometry question draws an SVG figure', await page.locator('.drill svg.fig').first().isVisible().catch(() => false));
+await page.waitForTimeout(500);
+await shot('24b-drill-geometry', { full: false });
+await page.emulateMedia({ reducedMotion: 'reduce' });
+const qAnim = await page.locator('.drill__q').evaluate((e) => getComputedStyle(e).animationName);
+check('reduced motion disables drill animation', qAnim === 'none', qAnim);
+await page.emulateMedia({ reducedMotion: 'no-preference' });
+await closeCore();
 
 check('no page/console errors', errors.length === 0, errors.join(' | '));
 await browser.close();
